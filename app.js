@@ -32,23 +32,56 @@ app.get('/', (req, res) => {
 //Making a login page
 app.get('/login', (req, res) => {
     res.render("login");
-})
+});
 
-app.get('/profile', isLoggedIn, async (req,res)=>{
+app.get('/profile', isLoggedIn, async (req, res) => {
     //finding user with the registered email
-    let user = await userModel.findOne({email:req.user.email}).populate("posts");
+    let user = await userModel.findOne({ email: req.user.email }).populate("posts");
     //It is used to refrence the object id of the user in the post
-    
+
     //sending uesr data to profile.ejs
-    res.render("profile", {user});
+    res.render("profile", { user });
 
 })
+
+//Like Functionality
+app.get('/like/:id', isLoggedIn, async (req, res) => {
+    //finding the userid of liked post id from postmodel
+    let post = await postModel.findOne({ _id: req.params.id }).populate("user");
+    if (post.likes.indexOf(req.user.userid) === -1) {
+        post.likes.push(req.user.userid);
+    } else {
+        post.likes.splice(post.likes.indexOf(req.user.userid),1);
+    }
+
+    // console.log(req.user);
+    await post.save();
+
+    res.redirect("/profile")
+
+});
+
+//Edit Functionality
+app.get('/edit/:id', isLoggedIn, async (req, res) => {
+    //finding the userid of liked post id from postmodel
+    let post = await postModel.findOne({ _id: req.params.id }).populate("user");
+    //rendering edit page
+    res.render("edit", {post});
+});
+
+//Update Functionality
+app.post('/update/:id', isLoggedIn, async (req, res) => {
+    //finding the userid of liked post id from postmodel
+    let post = await postModel.findOneAndUpdate({_id:req.params.id}, {content:req.body.content});
+    //rendering edit page
+    res.redirect("/profile");
+});
 
 //Retreiving data from post form
-app.post("/post", isLoggedIn, async (req,res)=>{
-    let user = await userModel.findOne({email:req.user.email});
-    let {content} = req.body;
-    
+app.post("/post", isLoggedIn, async (req, res) => {
+    let user = await userModel.findOne({ email: req.user.email });
+    let { content } = req.body;
+
     let post = await postModel.create({
         user: user._id,
         content
@@ -56,7 +89,7 @@ app.post("/post", isLoggedIn, async (req,res)=>{
     user.posts.push(post._id);
     await user.save();
     res.redirect("/profile");
-})
+});
 
 //Using database to handle form data
 //Since it is async function we are waiting for data.
@@ -95,17 +128,17 @@ app.post('/register', async (req, res) => {
 
 })
 
-app.post('/login', async (req,res)=>{
-    let {email, password} = req.body;
+app.post('/login', async (req, res) => {
+    let { email, password } = req.body;
 
     //Finding already registered email.
-    let user = await userModel.findOne({email});
+    let user = await userModel.findOne({ email });
     //If not already user send a response
-    if(!user) return res.status(500).send("Something went wrong");
+    if (!user) return res.status(500).send("Something went wrong");
 
     //comparing password and hash pasword using bcrypt
-    bcrypt.compare(password, user.password, function (err,result){
-        if(result){
+    bcrypt.compare(password, user.password, function (err, result) {
+        if (result) {
             //if true send a token 
             let token = jwt.sign({ email: email, userid: user._id }, "secretkey");
             res.cookie("token", token);
@@ -117,21 +150,21 @@ app.post('/login', async (req,res)=>{
             //redirect to login
             res.redirect("/login");
         }
-        
+
     })
 });
 
 //Logout routing
-app.get('/logout', (req,res)=>{
+app.get('/logout', (req, res) => {
     res.cookie("token", "");
     res.redirect("/login");
 })
 
-function isLoggedIn(req,res,next){
+function isLoggedIn(req, res, next) {
     //check the token value f logged in
-    if(req.cookies.token === ""){
+    if (req.cookies.token === "") {
         res.send("You need to Login")
-    }else {
+    } else {
         let data = jwt.verify(req.cookies.token, "secretkey")
         req.user = data;
     }
