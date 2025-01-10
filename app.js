@@ -29,13 +29,33 @@ app.get('/', (req, res) => {
     res.render("index");
 })
 
+//Making a login page
 app.get('/login', (req, res) => {
     res.render("login");
 })
 
-app.get('/profile', isLoggedIn, (req,res)=>{
-    console.log(req.user);
-    res.render("login")
+app.get('/profile', isLoggedIn, async (req,res)=>{
+    //finding user with the registered email
+    let user = await userModel.findOne({email:req.user.email}).populate("posts");
+    //It is used to refrence the object id of the user in the post
+    
+    //sending uesr data to profile.ejs
+    res.render("profile", {user});
+
+})
+
+//Retreiving data from post form
+app.post("/post", isLoggedIn, async (req,res)=>{
+    let user = await userModel.findOne({email:req.user.email});
+    let {content} = req.body;
+    
+    let post = await postModel.create({
+        user: user._id,
+        content
+    });
+    user.posts.push(post._id);
+    await user.save();
+    res.redirect("/profile");
 })
 
 //Using database to handle form data
@@ -91,7 +111,7 @@ app.post('/login', async (req,res)=>{
             res.cookie("token", token);
 
             //if true send a response
-            res.status(200).send("You can Login Now");
+            res.status(200).redirect("profile");
         }
         else {
             //redirect to login
