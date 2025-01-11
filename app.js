@@ -15,6 +15,9 @@ const bcrypt = require('bcrypt')
 //Initializing JsonWebToken
 const jwt = require('jsonwebtoken');
 
+//setting database coonection
+const db = require("./config/mongoose-connect");
+
 //Setting View Engine to use ejs
 app.set("view engine", "ejs");
 //making url encoded
@@ -76,6 +79,11 @@ app.post('/update/:id', isLoggedIn, async (req, res) => {
     //rendering edit page
     res.redirect("/profile");
 });
+
+app.get('/delete/:id', isLoggedIn, async (req,res)=>{
+    let post = await postModel.findOneAndDelete({_id:req.params.id})
+    res.redirect('/profile');
+})
 
 //Retreiving data from post form
 app.post("/post", isLoggedIn, async (req, res) => {

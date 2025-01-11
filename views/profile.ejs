@@ -48,7 +48,7 @@
                 <%= post.likes.indexOf(user._id) ? "Like" : "Unlike" %>
               </a>
               <a class="text-zinc-600" href="/edit/<%= post._id %>">Edit</a>
-              <a class="text-zinc-600" href="">Delete</a>
+              <a class="text-zinc-600" href="/delete/<%= post._id %>">Delete</a>
             </div>
           </div>
           <% }) %>
